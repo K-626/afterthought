@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>あとづけ絵しりとり</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #eee8f5 0%, #d1c4e9 50%, #b39ddb 100%);
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ===== Floating decorations ===== */
+        .bg-deco {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bg-deco span {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.12;
+            animation: floatUp linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.12;
+            }
+
+            100% {
+                transform: translateY(-10vh) scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* ===== START SCREEN ===== */
+        #screen-start {
+            justify-content: center;
+            gap: 35px;
+            text-align: center;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .title-main {
+            font-size: 3.2rem;
+            font-weight: 900;
+            color: #4a148c;
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.08);
+            line-height: 1.4;
+            letter-spacing: 0.05em;
+        }
+
+        /* unused, kept for reference */
+        .title-sub {
+            display: none;
+        }
+
+        .btn-start {
+            font-family: inherit;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            border: none;
+            padding: 22px 55px;
+            border-radius: 14px;
+            cursor: pointer;
+            box-shadow: 0 8px 30px rgba(245, 87, 108, 0.45);
+            transition: all 0.3s ease;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(245, 87, 108, 0.55);
+        }
+
+        .btn-start:active {
+            transform: translateY(0);
+        }
+
+        .endless-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #4a148c;
+            font-size: 1.1rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .endless-label input {
+            width: 22px;
+            height: 22px;
+            accent-color: #f5576c;
+            cursor: pointer;
+        }
+
+        /* ===== GAME SCREEN ===== */
+        #screen-game {
+            padding: 15px;
+            gap: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            background: rgba(74, 20, 140, 0.12);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 14px 22px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .start-char-disp {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #4a148c;
+        }
+
+        .start-char-disp .hl {
+            font-size: 1.8rem;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .progress-disp {
+            font-size: 1rem;
+            color: rgba(74, 20, 140, 0.7);
+            font-weight: 500;
+        }
+
+        .btn-giveup {
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #555;
+            background: rgba(0, 0, 0, 0.06);
+            border: 2px solid rgba(0, 0, 0, 0.15);
+            padding: 8px 22px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-giveup:hover {
+            background: rgba(255, 87, 87, 0.55);
+            border-color: #ff5757;
+        }
+
+        .slots-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 4px;
+            max-width: 1100px;
+            width: 100%;
+            padding: 5px 0;
+        }
+
+        .slot-wrap {
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .slot-arrow {
+            font-size: 1.8rem;
+            color: rgba(74, 20, 140, 0.4);
+            margin: 30px 2px 0;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: .5
+            }
+
+            50% {
+                opacity: 1
+            }
+        }
+
+        .slot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .slot.appear {
+            animation: popIn 0.35s ease forwards;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(.7)
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1)
+            }
+        }
+
+        .card {
+            width: 90px;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+            transition: all 0.3s;
+            border: 3px solid transparent;
+        }
+
+        .card svg {
+            width: 55px;
+            height: 55px;
+        }
+
+        .card.active {
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .card.done {
+            border-color: #4caf50;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.35);
+        }
+
+        .req-char {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #e65100;
+            background: rgba(230, 81, 0, 0.12);
+            padding: 1px 10px;
+            border-radius: 20px;
+            min-height: 22px;
+            min-width: 40px;
+            text-align: center;
+            line-height: 22px;
+        }
+
+        .slot-input {
+            width: 90px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            padding: 5px 6px;
+            border: 2px solid rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            color: #333;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .slot-input::placeholder {
+            color: rgba(0, 0, 0, 0.35);
+        }
+
+        .slot-input:focus {
+            border-color: #e65100;
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 10px rgba(230, 81, 0, 0.2);
+        }
+
+        .slot-input.ok {
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.25);
+        }
+
+        .slot-input.ng {
+            border-color: #ff5757;
+            background: rgba(255, 87, 87, 0.25);
+            animation: shake 0.3s;
+        }
+
+        .slot-input:disabled {
+            opacity: 0.65;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0)
+            }
+
+            25% {
+                transform: translateX(-4px)
+            }
+
+            75% {
+                transform: translateX(4px)
+            }
+        }
+
+        .err-msg {
+            font-size: 0.7rem;
+            color: #c62828;
+            min-height: 16px;
+            text-align: center;
+            max-width: 90px;
+        }
+
+        /* ===== END SCREEN ===== */
+        #screen-end {
+            justify-content: center;
+            gap: 30px;
+            text-align: center;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .end-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #4a148c;
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+        }
+
+        .end-msg {
+            font-size: 1.3rem;
+            color: rgba(74, 20, 140, 0.8);
+        }
+
+        .end-score {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .end-chain {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 18px 25px;
+            max-width: 600px;
+            width: 100%;
+            text-align: left;
+            color: rgba(74, 20, 140, 0.75);
+            font-size: 1rem;
+            line-height: 2;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .end-chain::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .end-chain::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .end-btns {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-end {
+            font-family: inherit;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #fff;
+            padding: 14px 35px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-end:hover {
+            transform: translateY(-3px);
+        }
+
+        .btn-retry {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-title {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            .title-main {
+                font-size: 2.2rem;
+            }
+
+            .btn-start {
+                font-size: 1.3rem;
+                padding: 18px 40px;
+            }
+
+            .card {
+                width: 72px;
+                height: 72px;
+            }
+
+            .card svg {
+                width: 42px;
+                height: 42px;
+            }
+
+            .slot-input {
+                width: 72px;
+                font-size: 0.8rem;
+            }
+
+            .slot-arrow {
+                font-size: 1.3rem;
+                margin: 22px 1px 0;
+            }
+
+            .game-header {
+                justify-content: center;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Floating bg decorations -->
+    <div class="bg-deco" id="bg-deco"></div>
+
+    <!-- ===== START ===== -->
+    <div id="screen-start" class="screen active">
+        <h1 class="title-main">あとづけ<br>絵しりとり</h1>
+        <button class="btn-start" id="btnStart" onclick="startGame()">ゲームすたーと！</button>
+        <label class="endless-label"><input type="checkbox" id="chkEndless">エンドレスモード</label>
+    </div>
+
+    <!-- ===== GAME ===== -->
+    <div id="screen-game" class="screen">
+        <div class="game-header">
+            <div class="header-left">
+                <span class="start-char-disp">はじめの文字：<span class="hl" id="dispStartChar"></span></span>
+                <span class="progress-disp" id="dispProgress"></span>
+            </div>
+            <button class="btn-giveup" onclick="giveUp()">ギブアップ</button>
+        </div>
+        <div class="slots-container" id="slotsContainer"></div>
+    </div>
+
+    <!-- ===== END ===== -->
+    <div id="screen-end" class="screen">
+        <div class="end-title">終了!!</div>
+        <div class="end-msg">今回は</div>
+        <div class="end-score"><span id="finalScore">0</span> 個</div>
+        <div class="end-msg">つなげられました。</div>
+        <div class="end-chain" id="endChain"></div>
+        <div class="end-btns">
+            <button class="btn-end btn-retry" onclick="startGame()">もういちど</button>
+            <button class="btn-end btn-title" onclick="goTitle()">タイトルにもどる</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== Constants =====
+        const VALID_CHARS = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわ';
+        const PIC_TYPES = ['stickman', 'square', 'circle'];
+        const SMALL_BIG = { 'ゃ': 'や', 'ゅ': 'ゆ', 'ょ': 'よ', 'ぁ': 'あ', 'ぃ': 'い', 'ぅ': 'う', 'ぇ': 'え', 'ぉ': 'お', 'っ': 'つ' };
+
+        const SVG = {
+            stickman: `<svg viewBox="0 0 100 100"><circle cx="50" cy="18" r="11" fill="none" stroke="#555" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="29" x2="50" y2="60" stroke="#555" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="38" x2="30" y2="52" stroke="#555" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="38" x2="70" y2="52" stroke="#555" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="60" x2="33" y2="82" stroke="#555" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="60" x2="67" y2="82" stroke="#555" stroke-width="3" stroke-linecap="round"/></svg>`,
+            square: `<svg viewBox="0 0 100 100"><rect x="18" y="18" width="64" height="64" fill="none" stroke="#555" stroke-width="3" rx="2"/></svg>`,
+            circle: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="#555" stroke-width="3"/></svg>`
+        };
+
+        // ===== State =====
+        let slots = [], curIdx = 0, startChar = '', endless = false, score = 0, usedWords = new Set();
+
+        // ===== Helpers =====
+        function rndChar() { return VALID_CHARS[Math.floor(Math.random() * VALID_CHARS.length)]; }
+        function rndPic() { return PIC_TYPES[Math.floor(Math.random() * PIC_TYPES.length)]; }
+        function k2h(s) { return s.replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)).replace(/\u30FC/g, 'ー'); }
+
+        function lastChar(w) {
+            let s = k2h(w);
+            while (s.length > 1 && s[s.length - 1] === 'ー') s = s.slice(0, -1);
+            if (!s) return '';
+            let c = s[s.length - 1];
+            return SMALL_BIG[c] || c;
+        }
+
+        function isKana(s) { return /^[\u3040-\u309F\u30A0-\u30FF\u30FC]+$/.test(s); }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // ===== Background Decorations =====
+        function initDeco() {
+            const el = document.getElementById('bg-deco');
+            el.innerHTML = '';
+            const colors = ['#f093fb', '#f5576c', '#667eea', '#ffd700', '#4caf50', '#ff9800'];
+            for (let i = 0; i < 20; i++) {
+                const sp = document.createElement('span');
+                const sz = 20 + Math.random() * 60;
+                sp.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-duration:${8 + Math.random() * 12}s;animation-delay:${Math.random() * 10}s;`;
+                el.appendChild(sp);
+            }
+        }
+
+        // ===== Game Logic =====
+        function startGame() {
+            endless = document.getElementById('chkEndless').checked;
+            startChar = rndChar();
+            slots = []; curIdx = 0; score = 0; usedWords.clear();
+            document.getElementById('slotsContainer').innerHTML = '';
+            document.getElementById('dispStartChar').textContent = startChar;
+            updateProgress();
+            addSlots(endless ? 10 : 30);
+            showScreen('screen-game');
+            activateSlot(0);
+        }
+
+        function addSlots(n) {
+            const container = document.getElementById('slotsContainer');
+            const base = slots.length;
+            for (let i = 0; i < n; i++) {
+                const idx = base + i;
+                const pic = rndPic();
+                const req = idx === 0 ? startChar : '';
+                slots.push({ pic, word: '', req });
+
+                const wrap = document.createElement('div');
+                wrap.className = 'slot-wrap';
+
+                if (idx > 0) {
+                    const ar = document.createElement('span');
+                    ar.className = 'slot-arrow';
+                    ar.textContent = '➜';
+                    wrap.appendChild(ar);
+                }
+
+                const sl = document.createElement('div');
+                sl.className = 'slot appear';
+                sl.id = 'sl' + idx;
+                sl.style.animationDelay = (i * 0.04) + 's';
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.id = 'cd' + idx;
+                card.innerHTML = SVG[pic];
+
+                const ch = document.createElement('div');
+                ch.className = 'req-char';
+                ch.id = 'rc' + idx;
+                ch.textContent = idx === 0 ? '「' + startChar + '」' : '';
+
+                const inp = document.createElement('input');
+                inp.type = 'text';
+                inp.className = 'slot-input';
+                inp.id = 'inp' + idx;
+                inp.placeholder = '???';
+                inp.disabled = true;
+                inp.autocomplete = 'off';
+                inp.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') { e.preventDefault(); tryValidate(idx); }
+                });
+
+                const err = document.createElement('div');
+                err.className = 'err-msg';
+                err.id = 'er' + idx;
+
+                sl.append(card, ch, inp, err);
+                wrap.appendChild(sl);
+                container.appendChild(wrap);
+            }
+        }
+
+        function activateSlot(i) {
+            document.querySelectorAll('.card.active').forEach(c => c.classList.remove('active'));
+            if (i < slots.length) {
+                const cd = document.getElementById('cd' + i);
+                if (cd) cd.classList.add('active');
+                const inp = document.getElementById('inp' + i);
+                if (inp) { inp.disabled = false; inp.focus(); }
+            }
+        }
+
+        function tryValidate(idx) {
+            if (idx !== curIdx) return;
+            const inp = document.getElementById('inp' + idx);
+            const err = document.getElementById('er' + idx);
+            const w = inp.value.trim();
+
+            err.textContent = '';
+            inp.classList.remove('ok', 'ng');
+
+            if (!w) { err.textContent = '入力してね'; inp.classList.add('ng'); return; }
+            if (!isKana(w)) { err.textContent = 'ひらがな/カタカナで！'; inp.classList.add('ng'); return; }
+
+            const h = k2h(w);
+            const req = slots[idx].req;
+            if (h[0] !== req) { err.textContent = '「' + req + '」から始めて！'; inp.classList.add('ng'); return; }
+
+            const lc = lastChar(w);
+            if (lc === 'ん') { err.textContent = '「ん」では終われない！'; inp.classList.add('ng'); return; }
+            if (usedWords.has(h)) { err.textContent = 'もう使った言葉！'; inp.classList.add('ng'); return; }
+
+            // Valid
+            slots[idx].word = w;
+            usedWords.add(h);
+            score++;
+            inp.classList.add('ok');
+            inp.disabled = true;
+            document.getElementById('cd' + idx).classList.remove('active');
+            document.getElementById('cd' + idx).classList.add('done');
+            updateProgress();
+
+            if (!endless && score >= 30) { setTimeout(endGame, 500); return; }
+
+            curIdx++;
+            if (endless && curIdx >= slots.length - 3) addSlots(10);
+
+            if (curIdx < slots.length) {
+                slots[curIdx].req = lc;
+                document.getElementById('rc' + curIdx).textContent = '「' + lc + '」';
+                activateSlot(curIdx);
+                const el = document.getElementById('sl' + curIdx);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function updateProgress() {
+            document.getElementById('dispProgress').textContent = endless ? score + ' 個' : score + ' / 30';
+        }
+
+        function giveUp() { endGame(); }
+
+        function endGame() {
+            document.getElementById('finalScore').textContent = score;
+            const chain = document.getElementById('endChain');
+            if (score === 0) {
+                chain.textContent = 'まだ言葉をつなげていません。';
+            } else {
+                let txt = '';
+                for (let i = 0; i < score; i++) {
+                    txt += (i + 1) + '. ' + slots[i].word;
+                    if (i < score - 1) txt += ' → ';
+                    if ((i + 1) % 5 === 0) txt += '\n';
+                }
+                chain.textContent = txt;
+            }
+            showScreen('screen-end');
+        }
+
+        function goTitle() { showScreen('screen-start'); }
+
+        // Init
+        initDeco();
+    </script>
+</body>
+
+</html>
