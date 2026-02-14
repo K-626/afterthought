@@ -8,11 +8,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
         rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            box-sizing: border-box
         }
 
         body {
@@ -20,22 +22,21 @@
             min-height: 100vh;
             background: linear-gradient(135deg, #eee8f5 0%, #d1c4e9 50%, #b39ddb 100%);
             color: #333;
-            overflow-x: hidden;
+            overflow-x: hidden
         }
 
         .screen {
             display: none;
             width: 100%;
-            min-height: 100vh;
+            min-height: 100vh
         }
 
         .screen.active {
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: center
         }
 
-        /* ===== Floating decorations ===== */
         .bg-deco {
             position: fixed;
             top: 0;
@@ -44,77 +45,83 @@
             height: 100%;
             pointer-events: none;
             z-index: 0;
-            overflow: hidden;
+            overflow: hidden
         }
 
         .bg-deco span {
             position: absolute;
             border-radius: 50%;
-            opacity: 0.12;
-            animation: floatUp linear infinite;
+            opacity: .12;
+            animation: floatUp linear infinite
         }
 
         @keyframes floatUp {
             0% {
                 transform: translateY(100vh) scale(0);
-                opacity: 0;
+                opacity: 0
             }
 
             10% {
-                opacity: 0.12;
+                opacity: .12
             }
 
             100% {
                 transform: translateY(-10vh) scale(1);
-                opacity: 0;
+                opacity: 0
             }
         }
 
-        /* ===== START SCREEN ===== */
         #screen-start {
             justify-content: center;
-            gap: 35px;
+            gap: 25px;
             text-align: center;
             padding: 20px;
             position: relative;
-            z-index: 1;
+            z-index: 1
         }
 
         .title-main {
             font-size: 3.2rem;
             font-weight: 900;
             color: #4a148c;
-            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.08);
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, .08);
             line-height: 1.4;
-            letter-spacing: 0.05em;
+            letter-spacing: .05em
         }
 
-        /* unused, kept for reference */
-        .title-sub {
-            display: none;
+        .btn-start,
+        .btn-online {
+            font-family: inherit;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            border: none;
+            padding: 20px 50px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all .3s ease;
+            display: block;
+            width: 300px
         }
 
         .btn-start {
-            font-family: inherit;
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: #fff;
             background: linear-gradient(135deg, #f093fb, #f5576c);
-            border: none;
-            padding: 22px 55px;
-            border-radius: 14px;
-            cursor: pointer;
-            box-shadow: 0 8px 30px rgba(245, 87, 108, 0.45);
-            transition: all 0.3s ease;
+            box-shadow: 0 8px 30px rgba(245, 87, 108, .45)
         }
 
-        .btn-start:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 40px rgba(245, 87, 108, 0.55);
+        .btn-online {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, .45)
         }
 
-        .btn-start:active {
-            transform: translateY(0);
+        .btn-start:hover,
+        .btn-online:hover {
+            transform: translateY(-3px)
+        }
+
+        .btn-start:active,
+        .btn-online:active {
+            transform: translateY(0)
         }
 
         .endless-label {
@@ -124,22 +131,322 @@
             color: #4a148c;
             font-size: 1.1rem;
             cursor: pointer;
-            user-select: none;
+            user-select: none
         }
 
         .endless-label input {
             width: 22px;
             height: 22px;
             accent-color: #f5576c;
-            cursor: pointer;
+            cursor: pointer
         }
 
-        /* ===== GAME SCREEN ===== */
+        /* LOBBY */
+        #screen-lobby,
+        #screen-waiting {
+            justify-content: center;
+            gap: 0;
+            padding: 20px;
+            position: relative;
+            z-index: 1
+        }
+
+        .lobby-container,
+        .waiting-container {
+            background: rgba(255, 255, 255, .15);
+            backdrop-filter: blur(15px);
+            border-radius: 24px;
+            padding: 30px 25px;
+            max-width: 440px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .1)
+        }
+
+        .lobby-title,
+        .waiting-title {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #4a148c
+        }
+
+        .lobby-card {
+            width: 100%;
+            background: rgba(255, 255, 255, .3);
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px
+        }
+
+        .lobby-label {
+            font-size: .9rem;
+            font-weight: 700;
+            color: #4a148c
+        }
+
+        .lobby-input {
+            font-family: inherit;
+            font-size: 1.1rem;
+            padding: 10px 14px;
+            border: 2px solid rgba(74, 20, 140, .2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, .6);
+            color: #333;
+            outline: none;
+            transition: all .3s;
+            width: 100%
+        }
+
+        .lobby-input:focus {
+            border-color: #7c4dff;
+            box-shadow: 0 0 12px rgba(124, 77, 255, .25)
+        }
+
+        .mode-select {
+            display: flex;
+            gap: 10px
+        }
+
+        .mode-option {
+            flex: 1;
+            cursor: pointer
+        }
+
+        .mode-option input {
+            display: none
+        }
+
+        .mode-btn {
+            display: block;
+            text-align: center;
+            padding: 12px 8px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, .4);
+            border: 2px solid transparent;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #4a148c;
+            transition: all .3s
+        }
+
+        .mode-desc {
+            display: block;
+            text-align: center;
+            font-size: .75rem;
+            color: #7c4dff;
+            margin-top: 4px
+        }
+
+        .mode-option input:checked~.mode-btn {
+            border-color: #7c4dff;
+            background: rgba(124, 77, 255, .15);
+            box-shadow: 0 0 12px rgba(124, 77, 255, .2)
+        }
+
+        .btn-create {
+            font-family: inherit;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 6px 20px rgba(245, 87, 108, .4);
+            transition: all .3s
+        }
+
+        .btn-create:hover {
+            transform: translateY(-2px)
+        }
+
+        .lobby-divider {
+            color: rgba(74, 20, 140, .5);
+            font-weight: 700;
+            font-size: .95rem;
+            position: relative;
+            width: 100%;
+            text-align: center
+        }
+
+        .lobby-divider::before,
+        .lobby-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 35%;
+            height: 1px;
+            background: rgba(74, 20, 140, .2)
+        }
+
+        .lobby-divider::before {
+            left: 0
+        }
+
+        .lobby-divider::after {
+            right: 0
+        }
+
+        .join-row {
+            display: flex;
+            gap: 8px
+        }
+
+        .join-row .lobby-input {
+            flex: 1
+        }
+
+        .btn-join {
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            padding: 10px 22px;
+            border-radius: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all .3s
+        }
+
+        .btn-join:hover {
+            transform: translateY(-2px)
+        }
+
+        .btn-back {
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #7c4dff;
+            background: transparent;
+            border: 2px solid rgba(124, 77, 255, .3);
+            padding: 10px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all .3s
+        }
+
+        .btn-back:hover {
+            background: rgba(124, 77, 255, .1)
+        }
+
+        /* WAITING ROOM */
+        .room-id-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, .4);
+            border-radius: 14px;
+            padding: 14px 20px
+        }
+
+        .room-id-label {
+            font-size: .85rem;
+            color: rgba(74, 20, 140, .6);
+            font-weight: 500
+        }
+
+        .room-id-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #4a148c;
+            letter-spacing: .15em;
+            font-family: monospace
+        }
+
+        .btn-copy {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: all .2s
+        }
+
+        .btn-copy:hover {
+            background: rgba(0, 0, 0, .08)
+        }
+
+        .waiting-mode {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #7c4dff
+        }
+
+        .player-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 250px;
+            overflow-y: auto
+        }
+
+        .player-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, .35);
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-weight: 600;
+            color: #333
+        }
+
+        .player-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .85rem;
+            font-weight: 700
+        }
+
+        .player-host {
+            font-size: .7rem;
+            color: #f5576c;
+            font-weight: 700;
+            margin-left: auto
+        }
+
+        .btn-start-game {
+            font-family: inherit;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #43e97b, #38f9d7);
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 6px 20px rgba(67, 233, 123, .4);
+            transition: all .3s
+        }
+
+        .btn-start-game:hover {
+            transform: translateY(-2px)
+        }
+
+        /* GAME */
         #screen-game {
             padding: 15px;
             gap: 15px;
             position: relative;
-            z-index: 1;
+            z-index: 1
         }
 
         .game-header {
@@ -148,37 +455,69 @@
             align-items: center;
             width: 100%;
             max-width: 1100px;
-            background: rgba(74, 20, 140, 0.12);
+            background: rgba(74, 20, 140, .12);
             backdrop-filter: blur(10px);
             border-radius: 16px;
             padding: 14px 22px;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 10px
         }
 
         .header-left {
             display: flex;
             align-items: center;
             gap: 20px;
-            flex-wrap: wrap;
+            flex-wrap: wrap
         }
 
         .start-char-disp {
             font-size: 1.2rem;
             font-weight: 700;
-            color: #4a148c;
+            color: #4a148c
         }
 
         .start-char-disp .hl {
             font-size: 1.8rem;
             color: #ffd700;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            text-shadow: 0 0 10px rgba(255, 215, 0, .5)
         }
 
         .progress-disp {
             font-size: 1rem;
-            color: rgba(74, 20, 140, 0.7);
-            font-weight: 500;
+            color: rgba(74, 20, 140, .7);
+            font-weight: 500
+        }
+
+        .room-id-small {
+            font-size: .85rem;
+            color: rgba(74, 20, 140, .5);
+            font-weight: 600;
+            background: rgba(255, 255, 255, .3);
+            padding: 4px 10px;
+            border-radius: 8px
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap
+        }
+
+        .turn-indicator {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #7c4dff;
+            padding: 6px 16px;
+            border-radius: 20px;
+            background: rgba(124, 77, 255, .12);
+            transition: all .3s
+        }
+
+        .turn-indicator.my-turn {
+            color: #f5576c;
+            background: rgba(245, 87, 108, .15);
+            animation: pulse 1.5s ease-in-out infinite
         }
 
         .btn-giveup {
@@ -186,17 +525,17 @@
             font-size: 1rem;
             font-weight: 700;
             color: #555;
-            background: rgba(0, 0, 0, 0.06);
-            border: 2px solid rgba(0, 0, 0, 0.15);
+            background: rgba(0, 0, 0, .06);
+            border: 2px solid rgba(0, 0, 0, .15);
             padding: 8px 22px;
             border-radius: 10px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all .3s
         }
 
         .btn-giveup:hover {
-            background: rgba(255, 87, 87, 0.55);
-            border-color: #ff5757;
+            background: rgba(255, 87, 87, .55);
+            border-color: #ff5757
         }
 
         .slots-container {
@@ -207,19 +546,19 @@
             gap: 4px;
             max-width: 1100px;
             width: 100%;
-            padding: 5px 0;
+            padding: 5px 0
         }
 
         .slot-wrap {
             display: flex;
-            align-items: flex-start;
+            align-items: flex-start
         }
 
         .slot-arrow {
             font-size: 1.8rem;
-            color: rgba(74, 20, 140, 0.4);
+            color: rgba(74, 20, 140, .4);
             margin: 30px 2px 0;
-            animation: pulse 2s ease-in-out infinite;
+            animation: pulse 2s ease-in-out infinite
         }
 
         @keyframes pulse {
@@ -238,11 +577,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 5px
         }
 
         .slot.appear {
-            animation: popIn 0.35s ease forwards;
+            animation: popIn .35s ease forwards
         }
 
         @keyframes popIn {
@@ -260,81 +599,81 @@
         .card {
             width: 90px;
             height: 90px;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, .95);
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
-            transition: all 0.3s;
-            border: 3px solid transparent;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .12);
+            transition: all .3s;
+            border: 3px solid transparent
         }
 
         .card svg {
             width: 55px;
-            height: 55px;
+            height: 55px
         }
 
         .card.active {
             border-color: #ffd700;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+            box-shadow: 0 0 20px rgba(255, 215, 0, .4)
         }
 
         .card.done {
             border-color: #4caf50;
-            box-shadow: 0 0 15px rgba(76, 175, 80, 0.35);
+            box-shadow: 0 0 15px rgba(76, 175, 80, .35)
         }
 
         .req-char {
-            font-size: 0.85rem;
+            font-size: .85rem;
             font-weight: 700;
             color: #e65100;
-            background: rgba(230, 81, 0, 0.12);
+            background: rgba(230, 81, 0, .12);
             padding: 1px 10px;
             border-radius: 20px;
             min-height: 22px;
             min-width: 40px;
             text-align: center;
-            line-height: 22px;
+            line-height: 22px
         }
 
         .slot-input {
             width: 90px;
             font-family: inherit;
-            font-size: 0.9rem;
+            font-size: .9rem;
             padding: 5px 6px;
-            border: 2px solid rgba(0, 0, 0, 0.15);
+            border: 2px solid rgba(0, 0, 0, .15);
             border-radius: 8px;
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, .5);
             color: #333;
             text-align: center;
             outline: none;
-            transition: all 0.3s;
+            transition: all .3s
         }
 
         .slot-input::placeholder {
-            color: rgba(0, 0, 0, 0.35);
+            color: rgba(0, 0, 0, .35)
         }
 
         .slot-input:focus {
             border-color: #e65100;
-            background: rgba(255, 255, 255, 0.7);
-            box-shadow: 0 0 10px rgba(230, 81, 0, 0.2);
+            background: rgba(255, 255, 255, .7);
+            box-shadow: 0 0 10px rgba(230, 81, 0, .2)
         }
 
         .slot-input.ok {
             border-color: #4caf50;
-            background: rgba(76, 175, 80, 0.25);
+            background: rgba(76, 175, 80, .25)
         }
 
         .slot-input.ng {
             border-color: #ff5757;
-            background: rgba(255, 87, 87, 0.25);
-            animation: shake 0.3s;
+            background: rgba(255, 87, 87, .25);
+            animation: shake .3s
         }
 
         .slot-input:disabled {
-            opacity: 0.65;
+            opacity: .65
         }
 
         @keyframes shake {
@@ -354,71 +693,83 @@
         }
 
         .err-msg {
-            font-size: 0.7rem;
+            font-size: .7rem;
             color: #c62828;
             min-height: 16px;
             text-align: center;
-            max-width: 90px;
+            max-width: 90px
         }
 
-        /* ===== END SCREEN ===== */
+        .answered-by {
+            font-size: .65rem;
+            color: #7c4dff;
+            font-weight: 600;
+            min-height: 14px;
+            text-align: center;
+            max-width: 90px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        /* END */
         #screen-end {
             justify-content: center;
             gap: 30px;
             text-align: center;
             padding: 20px;
             position: relative;
-            z-index: 1;
+            z-index: 1
         }
 
         .end-title {
             font-size: 2.5rem;
             font-weight: 900;
             color: #4a148c;
-            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, .15)
         }
 
         .end-msg {
             font-size: 1.3rem;
-            color: rgba(74, 20, 140, 0.8);
+            color: rgba(74, 20, 140, .8)
         }
 
         .end-score {
             font-size: 3.5rem;
             font-weight: 900;
             color: #ffd700;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            text-shadow: 0 0 20px rgba(255, 215, 0, .5)
         }
 
         .end-chain {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, .1);
             backdrop-filter: blur(10px);
             border-radius: 16px;
             padding: 18px 25px;
             max-width: 600px;
             width: 100%;
             text-align: left;
-            color: rgba(74, 20, 140, 0.75);
+            color: rgba(74, 20, 140, .75);
             font-size: 1rem;
             line-height: 2;
             max-height: 180px;
-            overflow-y: auto;
+            overflow-y: auto
         }
 
         .end-chain::-webkit-scrollbar {
-            width: 6px;
+            width: 6px
         }
 
         .end-chain::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
+            background: rgba(255, 255, 255, .3);
+            border-radius: 3px
         }
 
         .end-btns {
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
-            justify-content: center;
+            justify-content: center
         }
 
         .btn-end {
@@ -430,105 +781,219 @@
             border-radius: 12px;
             border: none;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all .3s
         }
 
         .btn-end:hover {
-            transform: translateY(-3px);
+            transform: translateY(-3px)
         }
 
         .btn-retry {
             background: linear-gradient(135deg, #667eea, #764ba2);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, .4)
         }
 
         .btn-title {
             background: linear-gradient(135deg, #f093fb, #f5576c);
-            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, .4)
         }
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 600px) {
+        .scoreboard {
+            background: rgba(255, 255, 255, .15);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 18px 25px;
+            max-width: 400px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .score-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, .2)
+        }
+
+        .score-item:first-child {
+            background: rgba(255, 215, 0, .2)
+        }
+
+        .score-rank {
+            font-size: 1.2rem;
+            font-weight: 900;
+            min-width: 30px
+        }
+
+        .score-name {
+            flex: 1;
+            font-weight: 600;
+            color: #4a148c
+        }
+
+        .score-value {
+            font-weight: 900;
+            color: #f5576c;
+            font-size: 1.1rem
+        }
+
+        @media(max-width:600px) {
             .title-main {
-                font-size: 2.2rem;
+                font-size: 2.2rem
             }
 
-            .btn-start {
-                font-size: 1.3rem;
-                padding: 18px 40px;
+            .btn-start,
+            .btn-online {
+                font-size: 1.2rem;
+                padding: 16px 30px;
+                width: 250px
             }
 
             .card {
                 width: 72px;
-                height: 72px;
+                height: 72px
             }
 
             .card svg {
                 width: 42px;
-                height: 42px;
+                height: 42px
             }
 
             .slot-input {
                 width: 72px;
-                font-size: 0.8rem;
+                font-size: .8rem
             }
 
             .slot-arrow {
                 font-size: 1.3rem;
-                margin: 22px 1px 0;
+                margin: 22px 1px 0
             }
 
             .game-header {
                 justify-content: center;
-                text-align: center;
+                text-align: center
+            }
+
+            .mode-select {
+                flex-direction: column
             }
         }
     </style>
 </head>
 
 <body>
-
-    <!-- Floating bg decorations -->
     <div class="bg-deco" id="bg-deco"></div>
 
-    <!-- ===== START ===== -->
+    <!-- START -->
     <div id="screen-start" class="screen active">
         <h1 class="title-main">あとづけ<br>絵しりとり</h1>
-        <button class="btn-start" id="btnStart" onclick="startGame()">ゲームすたーと！</button>
-        <label class="endless-label"><input type="checkbox" id="chkEndless">エンドレスモード</label>
+        <button class="btn-start" onclick="startGame()">ゲームすたーと！</button>
+        <button class="btn-online" onclick="goOnlineLobby()">オンライン</button>
+        <label class="endless-label"><input type="checkbox" id="chkEndless">エンドレスモード（オフラインのみ）</label>
     </div>
 
-    <!-- ===== GAME ===== -->
+    <!-- LOBBY -->
+    <div id="screen-lobby" class="screen">
+        <div class="lobby-container">
+            <h2 class="lobby-title">🌐 ロビー</h2>
+            <div class="lobby-card">
+                <label class="lobby-label">なまえ</label>
+                <input type="text" id="inputName" class="lobby-input" placeholder="なまえを入力" maxlength="8">
+            </div>
+            <div class="lobby-card">
+                <label class="lobby-label">モード</label>
+                <div class="mode-select">
+                    <label class="mode-option"><input type="radio" name="mode" value="battle" checked><span
+                            class="mode-btn"> 対戦</span><span class="mode-desc"></span></label>
+                    <label class="mode-option"><input type="radio" name="mode" value="party"><span
+                            class="mode-btn">パーティ</span><span class="mode-desc"></span></label>
+                </div>
+            </div>
+            <div class="lobby-card">
+                <button class="btn-create" onclick="createRoom()">ルームを作成</button>
+            </div>
+            <div class="lobby-divider">または</div>
+            <div class="lobby-card">
+                <label class="lobby-label">ルームIDで参加</label>
+                <div class="join-row">
+                    <input type="text" id="inputRoomId" class="lobby-input" placeholder="ルームID" maxlength="6"
+                        style="text-transform:uppercase">
+                    <button class="btn-join" onclick="joinRoom()">参加</button>
+                </div>
+            </div>
+            <button class="btn-back" onclick="goTitle()">もどる</button>
+        </div>
+    </div>
+
+    <!-- WAITING -->
+    <div id="screen-waiting" class="screen">
+        <div class="waiting-container">
+            <h2 class="waiting-title">ルーム待機中</h2>
+            <div class="room-id-box">
+                <span class="room-id-label">ルームID</span>
+                <span class="room-id-value" id="dispRoomId"></span>
+                <button class="btn-copy" onclick="copyRoomId()">📋</button>
+            </div>
+            <div class="waiting-mode" id="dispWaitingMode"></div>
+            <div class="player-list" id="playerList"></div>
+            <button class="btn-start-game" id="btnStartGame" onclick="startOnlineGame()"
+                style="display:none">ゲーム開始！</button>
+            <button class="btn-back" onclick="leaveRoom()">退出する</button>
+        </div>
+    </div>
+
+    <!-- GAME -->
     <div id="screen-game" class="screen">
         <div class="game-header">
             <div class="header-left">
                 <span class="start-char-disp">はじめの文字：<span class="hl" id="dispStartChar"></span></span>
                 <span class="progress-disp" id="dispProgress"></span>
+                <span class="room-id-small" id="dispRoomIdGame" style="display:none"></span>
             </div>
-            <button class="btn-giveup" onclick="giveUp()">ギブアップ</button>
+            <div class="header-right">
+                <span class="turn-indicator" id="turnIndicator" style="display:none"></span>
+                <button class="btn-giveup" onclick="handleGiveUp()">ギブアップ</button>
+            </div>
         </div>
         <div class="slots-container" id="slotsContainer"></div>
     </div>
 
-    <!-- ===== END ===== -->
+    <!-- END -->
     <div id="screen-end" class="screen">
         <div class="end-title">終了!!</div>
         <div class="end-msg">今回は</div>
         <div class="end-score"><span id="finalScore">0</span> 個</div>
         <div class="end-msg">つなげられました。</div>
+        <div class="scoreboard" id="scoreboard" style="display:none"></div>
         <div class="end-chain" id="endChain"></div>
         <div class="end-btns">
-            <button class="btn-end btn-retry" onclick="startGame()">もういちど</button>
-            <button class="btn-end btn-title" onclick="goTitle()">タイトルにもどる</button>
+            <button class="btn-end btn-retry" id="btnRetry" onclick="handleRetry()">もういちど</button>
+            <button class="btn-end btn-title" onclick="handleGoTitle()">タイトルにもどる</button>
         </div>
     </div>
 
     <script>
+        // ===== Firebase =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyDy6pW3kgelXzHp5ztYgvLf3kJz_pdmioU",
+            authDomain: "afterthought-656d2.firebaseapp.com",
+            projectId: "afterthought-656d2",
+            storageBucket: "afterthought-656d2.firebasestorage.app",
+            messagingSenderId: "356282973094",
+            appId: "1:356282973094:web:26ac163afdc74c93f26d67",
+            measurementId: "G-BPF8XR86W6"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         // ===== Constants =====
         const VALID_CHARS = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわ';
         const PIC_TYPES = ['stickman', 'square', 'circle'];
         const SMALL_BIG = { 'ゃ': 'や', 'ゅ': 'ゆ', 'ょ': 'よ', 'ぁ': 'あ', 'ぃ': 'い', 'ぅ': 'う', 'ぇ': 'え', 'ぉ': 'お', 'っ': 'つ' };
-
         const SVG = {
             stickman: `<svg viewBox="0 0 100 100"><circle cx="50" cy="18" r="11" fill="none" stroke="#555" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="29" x2="50" y2="60" stroke="#555" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="38" x2="30" y2="52" stroke="#555" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="38" x2="70" y2="52" stroke="#555" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="60" x2="33" y2="82" stroke="#555" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="60" x2="67" y2="82" stroke="#555" stroke-width="3" stroke-linecap="round"/></svg>`,
             square: `<svg viewBox="0 0 100 100"><rect x="18" y="18" width="64" height="64" fill="none" stroke="#555" stroke-width="3" rx="2"/></svg>`,
@@ -537,186 +1002,364 @@
 
         // ===== State =====
         let slots = [], curIdx = 0, startChar = '', endless = false, score = 0, usedWords = new Set();
+        // Online
+        let isOnline = false, roomId = null, playerId = null, playerName = '', isHost = false;
+        let roomRef = null, onlineMode = 'battle', players = {}, listenerRefs = [], locallyAnswered = new Set();
+        let playerScores = {};
 
         // ===== Helpers =====
-        function rndChar() { return VALID_CHARS[Math.floor(Math.random() * VALID_CHARS.length)]; }
-        function rndPic() { return PIC_TYPES[Math.floor(Math.random() * PIC_TYPES.length)]; }
-        function k2h(s) { return s.replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)).replace(/\u30FC/g, 'ー'); }
+        function rndChar() { return VALID_CHARS[Math.floor(Math.random() * VALID_CHARS.length)] }
+        function rndPic() { return PIC_TYPES[Math.floor(Math.random() * PIC_TYPES.length)] }
+        function k2h(s) { return s.replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)).replace(/\u30FC/g, 'ー') }
+        function lastChar(w) { let s = k2h(w); while (s.length > 1 && s[s.length - 1] === 'ー') s = s.slice(0, -1); if (!s) return ''; let c = s[s.length - 1]; return SMALL_BIG[c] || c }
+        function isKana(s) { return /^[\u3040-\u309F\u30A0-\u30FF\u30FC]+$/.test(s) }
+        function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active') }
+        function genId(len) { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let r = ''; for (let i = 0; i < len; i++)r += c[Math.floor(Math.random() * c.length)]; return r }
 
-        function lastChar(w) {
-            let s = k2h(w);
-            while (s.length > 1 && s[s.length - 1] === 'ー') s = s.slice(0, -1);
-            if (!s) return '';
-            let c = s[s.length - 1];
-            return SMALL_BIG[c] || c;
-        }
+        // ===== Background =====
+        function initDeco() { const el = document.getElementById('bg-deco'); el.innerHTML = ''; const colors = ['#f093fb', '#f5576c', '#667eea', '#ffd700', '#4caf50', '#ff9800']; for (let i = 0; i < 20; i++) { const sp = document.createElement('span'); const sz = 20 + Math.random() * 60; sp.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-duration:${8 + Math.random() * 12}s;animation-delay:${Math.random() * 10}s;`; el.appendChild(sp) } }
 
-        function isKana(s) { return /^[\u3040-\u309F\u30A0-\u30FF\u30FC]+$/.test(s); }
+        // ===== Screen helpers =====
+        function goTitle() { cleanupOnline(); showScreen('screen-start') }
+        function handleGoTitle() { cleanupOnline(); showScreen('screen-start') }
+        function handleGiveUp() { if (isOnline) { leaveRoom() } else { endGame() } }
+        function handleRetry() { if (isOnline) { cleanupOnline(); goOnlineLobby() } else { startGame() } }
 
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
-
-        // ===== Background Decorations =====
-        function initDeco() {
-            const el = document.getElementById('bg-deco');
-            el.innerHTML = '';
-            const colors = ['#f093fb', '#f5576c', '#667eea', '#ffd700', '#4caf50', '#ff9800'];
-            for (let i = 0; i < 20; i++) {
-                const sp = document.createElement('span');
-                const sz = 20 + Math.random() * 60;
-                sp.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-duration:${8 + Math.random() * 12}s;animation-delay:${Math.random() * 10}s;`;
-                el.appendChild(sp);
-            }
-        }
-
-        // ===== Game Logic =====
+        // ===== Offline Game =====
         function startGame() {
-            endless = document.getElementById('chkEndless').checked;
-            startChar = rndChar();
-            slots = []; curIdx = 0; score = 0; usedWords.clear();
+            isOnline = false; endless = document.getElementById('chkEndless').checked;
+            startChar = rndChar(); slots = []; curIdx = 0; score = 0; usedWords.clear();
             document.getElementById('slotsContainer').innerHTML = '';
             document.getElementById('dispStartChar').textContent = startChar;
-            updateProgress();
-            addSlots(endless ? 10 : 30);
-            showScreen('screen-game');
-            activateSlot(0);
+            document.getElementById('dispRoomIdGame').style.display = 'none';
+            document.getElementById('turnIndicator').style.display = 'none';
+            updateProgress(); addSlots(endless ? 10 : 30); showScreen('screen-game'); activateSlot(0);
         }
-
         function addSlots(n) {
-            const container = document.getElementById('slotsContainer');
-            const base = slots.length;
+            const container = document.getElementById('slotsContainer'); const base = slots.length;
             for (let i = 0; i < n; i++) {
-                const idx = base + i;
-                const pic = rndPic();
-                const req = idx === 0 ? startChar : '';
-                slots.push({ pic, word: '', req });
-
-                const wrap = document.createElement('div');
-                wrap.className = 'slot-wrap';
-
-                if (idx > 0) {
-                    const ar = document.createElement('span');
-                    ar.className = 'slot-arrow';
-                    ar.textContent = '➜';
-                    wrap.appendChild(ar);
-                }
-
-                const sl = document.createElement('div');
-                sl.className = 'slot appear';
-                sl.id = 'sl' + idx;
-                sl.style.animationDelay = (i * 0.04) + 's';
-
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.id = 'cd' + idx;
-                card.innerHTML = SVG[pic];
-
-                const ch = document.createElement('div');
-                ch.className = 'req-char';
-                ch.id = 'rc' + idx;
-                ch.textContent = idx === 0 ? '「' + startChar + '」' : '';
-
-                const inp = document.createElement('input');
-                inp.type = 'text';
-                inp.className = 'slot-input';
-                inp.id = 'inp' + idx;
-                inp.placeholder = '???';
-                inp.disabled = true;
-                inp.autocomplete = 'off';
-                inp.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') { e.preventDefault(); tryValidate(idx); }
-                });
-
-                const err = document.createElement('div');
-                err.className = 'err-msg';
-                err.id = 'er' + idx;
-
-                sl.append(card, ch, inp, err);
-                wrap.appendChild(sl);
-                container.appendChild(wrap);
+                const idx = base + i, pic = rndPic(), req = idx === 0 ? startChar : '';
+                slots.push({ pic, word: '', req, answeredBy: '' });
+                const wrap = document.createElement('div'); wrap.className = 'slot-wrap';
+                if (idx > 0) { const ar = document.createElement('span'); ar.className = 'slot-arrow'; ar.textContent = '➜'; wrap.appendChild(ar) }
+                const sl = document.createElement('div'); sl.className = 'slot appear'; sl.id = 'sl' + idx; sl.style.animationDelay = (i * .04) + 's';
+                const card = document.createElement('div'); card.className = 'card'; card.id = 'cd' + idx; card.innerHTML = SVG[pic];
+                const ch = document.createElement('div'); ch.className = 'req-char'; ch.id = 'rc' + idx; ch.textContent = idx === 0 ? '「' + startChar + '」' : '';
+                const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'slot-input'; inp.id = 'inp' + idx; inp.placeholder = '???'; inp.disabled = true; inp.autocomplete = 'off';
+                inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); if (isOnline) tryValidateOnline(idx); else tryValidate(idx) } });
+                const ab = document.createElement('div'); ab.className = 'answered-by'; ab.id = 'ab' + idx;
+                const err = document.createElement('div'); err.className = 'err-msg'; err.id = 'er' + idx;
+                sl.append(card, ch, inp, ab, err); wrap.appendChild(sl); container.appendChild(wrap);
             }
         }
-
         function activateSlot(i) {
             document.querySelectorAll('.card.active').forEach(c => c.classList.remove('active'));
-            if (i < slots.length) {
-                const cd = document.getElementById('cd' + i);
-                if (cd) cd.classList.add('active');
-                const inp = document.getElementById('inp' + i);
-                if (inp) { inp.disabled = false; inp.focus(); }
-            }
+            if (i < slots.length) { const cd = document.getElementById('cd' + i); if (cd) cd.classList.add('active'); const inp = document.getElementById('inp' + i); if (inp) { inp.disabled = false; inp.focus() } }
         }
-
         function tryValidate(idx) {
             if (idx !== curIdx) return;
-            const inp = document.getElementById('inp' + idx);
-            const err = document.getElementById('er' + idx);
-            const w = inp.value.trim();
-
-            err.textContent = '';
-            inp.classList.remove('ok', 'ng');
-
-            if (!w) { err.textContent = '入力してね'; inp.classList.add('ng'); return; }
-            if (!isKana(w)) { err.textContent = 'ひらがな/カタカナで！'; inp.classList.add('ng'); return; }
-
-            const h = k2h(w);
-            const req = slots[idx].req;
-            if (h[0] !== req) { err.textContent = '「' + req + '」から始めて！'; inp.classList.add('ng'); return; }
-
+            const inp = document.getElementById('inp' + idx), err = document.getElementById('er' + idx), w = inp.value.trim();
+            err.textContent = ''; inp.classList.remove('ok', 'ng');
+            if (!w) { err.textContent = '入力してね'; inp.classList.add('ng'); return }
+            if (!isKana(w)) { err.textContent = 'ひらがな/カタカナで！'; inp.classList.add('ng'); return }
+            const h = k2h(w), req = slots[idx].req;
+            if (h[0] !== req) { err.textContent = '「' + req + '」から始めて！'; inp.classList.add('ng'); return }
             const lc = lastChar(w);
-            if (lc === 'ん') { err.textContent = '「ん」では終われない！'; inp.classList.add('ng'); return; }
-            if (usedWords.has(h)) { err.textContent = 'もう使った言葉！'; inp.classList.add('ng'); return; }
-
-            // Valid
-            slots[idx].word = w;
-            usedWords.add(h);
-            score++;
-            inp.classList.add('ok');
-            inp.disabled = true;
-            document.getElementById('cd' + idx).classList.remove('active');
-            document.getElementById('cd' + idx).classList.add('done');
+            if (lc === 'ん') { err.textContent = '「ん」では終われない！'; inp.classList.add('ng'); return }
+            if (usedWords.has(h)) { err.textContent = 'もう使った言葉！'; inp.classList.add('ng'); return }
+            slots[idx].word = w; usedWords.add(h); score++; inp.classList.add('ok'); inp.disabled = true;
+            document.getElementById('cd' + idx).classList.remove('active'); document.getElementById('cd' + idx).classList.add('done');
             updateProgress();
-
-            if (!endless && score >= 30) { setTimeout(endGame, 500); return; }
-
-            curIdx++;
-            if (endless && curIdx >= slots.length - 3) addSlots(10);
-
-            if (curIdx < slots.length) {
-                slots[curIdx].req = lc;
-                document.getElementById('rc' + curIdx).textContent = '「' + lc + '」';
-                activateSlot(curIdx);
-                const el = document.getElementById('sl' + curIdx);
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+            if (!endless && score >= 30) { setTimeout(endGame, 500); return }
+            curIdx++; if (endless && curIdx >= slots.length - 3) addSlots(10);
+            if (curIdx < slots.length) { slots[curIdx].req = lc; document.getElementById('rc' + curIdx).textContent = '「' + lc + '」'; activateSlot(curIdx); const el = document.getElementById('sl' + curIdx); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
         }
-
-        function updateProgress() {
-            document.getElementById('dispProgress').textContent = endless ? score + ' 個' : score + ' / 30';
-        }
-
-        function giveUp() { endGame(); }
-
+        function updateProgress() { document.getElementById('dispProgress').textContent = endless ? score + ' 個' : score + ' / 30' }
         function endGame() {
             document.getElementById('finalScore').textContent = score;
+            document.getElementById('scoreboard').style.display = 'none';
             const chain = document.getElementById('endChain');
-            if (score === 0) {
-                chain.textContent = 'まだ言葉をつなげていません。';
-            } else {
-                let txt = '';
-                for (let i = 0; i < score; i++) {
-                    txt += (i + 1) + '. ' + slots[i].word;
-                    if (i < score - 1) txt += ' → ';
-                    if ((i + 1) % 5 === 0) txt += '\n';
-                }
-                chain.textContent = txt;
-            }
+            if (score === 0) { chain.textContent = 'まだ言葉をつなげていません。' }
+            else { let txt = ''; for (let i = 0; i < score; i++) { txt += (i + 1) + '. ' + slots[i].word; if (i < score - 1) txt += ' → '; if ((i + 1) % 5 === 0) txt += '\n' } chain.textContent = txt }
             showScreen('screen-end');
         }
 
-        function goTitle() { showScreen('screen-start'); }
+        // ===== Online: Lobby =====
+        function goOnlineLobby() { showScreen('screen-lobby') }
+
+        function createRoom() {
+            playerName = document.getElementById('inputName').value.trim();
+            if (!playerName) { alert('なまえを入力してください'); return }
+            onlineMode = document.querySelector('input[name="mode"]:checked').value;
+            roomId = genId(6); playerId = genId(10); isHost = true; isOnline = true;
+            roomRef = db.ref('rooms/' + roomId);
+            roomRef.set({
+                settings: { mode: onlineMode, startChar: '', endless: false, started: false },
+                players: { [playerId]: { name: playerName, order: 0, score: 0 } },
+                status: 'waiting'
+            }).then(() => {
+                document.getElementById('dispRoomId').textContent = roomId;
+                document.getElementById('dispWaitingMode').textContent = onlineMode === 'battle' ? '⚔️ 対戦モード' : '🎉 パーティモード';
+                document.getElementById('btnStartGame').style.display = 'block';
+                setupWaitingListeners();
+                showScreen('screen-waiting');
+            }).catch(e => { alert('ルーム作成に失敗しました: ' + e.message) });
+        }
+
+        function joinRoom() {
+            playerName = document.getElementById('inputName').value.trim();
+            if (!playerName) { alert('なまえを入力してください'); return }
+            const rid = document.getElementById('inputRoomId').value.trim().toUpperCase();
+            if (!rid) { alert('ルームIDを入力してください'); return }
+            roomId = rid; playerId = genId(10); isHost = false; isOnline = true;
+            roomRef = db.ref('rooms/' + roomId);
+            roomRef.once('value', snap => {
+                if (!snap.exists()) { alert('ルームが見つかりません'); isOnline = false; return }
+                const data = snap.val();
+                if (data.status !== 'waiting') { alert('ゲームは既に始まっています'); isOnline = false; return }
+                onlineMode = data.settings.mode;
+                const pcount = Object.keys(data.players || {}).length;
+                roomRef.child('players/' + playerId).set({ name: playerName, order: pcount, score: 0 }).then(() => {
+                    document.getElementById('dispRoomId').textContent = roomId;
+                    document.getElementById('dispWaitingMode').textContent = onlineMode === 'battle' ? '⚔️ 対戦モード' : '🎉 パーティモード';
+                    document.getElementById('btnStartGame').style.display = 'none';
+                    setupWaitingListeners();
+                    showScreen('screen-waiting');
+                });
+            });
+        }
+
+        function copyRoomId() { navigator.clipboard.writeText(roomId).then(() => { const btn = document.querySelector('.btn-copy'); btn.textContent = '✅'; setTimeout(() => btn.textContent = '📋', 1500) }) }
+
+        function setupWaitingListeners() {
+            const pRef = roomRef.child('players');
+            const pCb = pRef.on('value', snap => {
+                players = snap.val() || {};
+                const list = document.getElementById('playerList'); list.innerHTML = '';
+                const sorted = Object.entries(players).sort((a, b) => a[1].order - b[1].order);
+                sorted.forEach(([pid, p], i) => {
+                    const item = document.createElement('div'); item.className = 'player-item';
+                    item.innerHTML = `<span class="player-num">${i + 1}</span><span>${p.name}</span>${i === 0 ? '<span class="player-host">ホスト</span>' : ''}`;
+                    list.appendChild(item);
+                });
+                if (isHost) document.getElementById('btnStartGame').style.display = Object.keys(players).length >= 1 ? 'block' : 'none';
+            });
+            listenerRefs.push({ ref: pRef, event: 'value', cb: pCb });
+            // Listen for game start (non-host)
+            const sRef = roomRef.child('settings/started');
+            const sCb = sRef.on('value', snap => { if (snap.val() === true) initOnlineGame() });
+            listenerRefs.push({ ref: sRef, event: 'value', cb: sCb });
+        }
+
+        // ===== Online: Start Game =====
+        function startOnlineGame() {
+            if (!isHost) return;
+            const sc = rndChar(); startChar = sc;
+            const slotsData = {};
+            for (let i = 0; i < 30; i++) { slotsData[i] = { pic: rndPic(), req: i === 0 ? sc : '', word: '', answeredBy: '' } }
+            // Determine turn order
+            const sorted = Object.entries(players).sort((a, b) => a[1].order - b[1].order);
+            const firstPlayer = sorted[0][0];
+            roomRef.update({
+                'settings/startChar': sc, 'settings/started': true,
+                'state': { currentIndex: 0, currentTurnPlayer: firstPlayer, score: 0, usedWords: {} },
+                'slots': slotsData, 'status': 'playing'
+            });
+        }
+
+        function initOnlineGame() {
+            roomRef.once('value', snap => {
+                const data = snap.val(); if (!data) return;
+                startChar = data.settings.startChar; onlineMode = data.settings.mode;
+                players = data.players || {}; score = 0; curIdx = 0; usedWords.clear();
+                slots = []; locallyAnswered.clear(); playerScores = {};
+                Object.keys(players).forEach(pid => { playerScores[pid] = 0 });
+                document.getElementById('slotsContainer').innerHTML = '';
+                document.getElementById('dispStartChar').textContent = startChar;
+                document.getElementById('dispRoomIdGame').textContent = '🔗 ' + roomId;
+                document.getElementById('dispRoomIdGame').style.display = 'inline';
+                document.getElementById('turnIndicator').style.display = 'inline';
+                // Render slots from Firebase data
+                const slotsData = data.slots || {};
+                const container = document.getElementById('slotsContainer');
+                const count = Object.keys(slotsData).length;
+                for (let i = 0; i < count; i++) {
+                    const sd = slotsData[i];
+                    slots.push({ pic: sd.pic, word: sd.word || '', req: sd.req || '', answeredBy: sd.answeredBy || '' });
+                    const wrap = document.createElement('div'); wrap.className = 'slot-wrap';
+                    if (i > 0) { const ar = document.createElement('span'); ar.className = 'slot-arrow'; ar.textContent = '➜'; wrap.appendChild(ar) }
+                    const sl = document.createElement('div'); sl.className = 'slot appear'; sl.id = 'sl' + i; sl.style.animationDelay = (i * .04) + 's';
+                    const card = document.createElement('div'); card.className = 'card'; card.id = 'cd' + i; card.innerHTML = SVG[sd.pic];
+                    const ch = document.createElement('div'); ch.className = 'req-char'; ch.id = 'rc' + i; ch.textContent = sd.req ? '「' + sd.req + '」' : '';
+                    const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'slot-input'; inp.id = 'inp' + i; inp.placeholder = '???'; inp.disabled = true; inp.autocomplete = 'off';
+                    (function (idx) { inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); tryValidateOnline(idx) } }) })(i);
+                    const ab = document.createElement('div'); ab.className = 'answered-by'; ab.id = 'ab' + i;
+                    const err = document.createElement('div'); err.className = 'err-msg'; err.id = 'er' + i;
+                    sl.append(card, ch, inp, ab, err); wrap.appendChild(sl); container.appendChild(wrap);
+                    // If slot already answered
+                    if (sd.word) { inp.value = sd.word; inp.classList.add('ok'); card.classList.add('done'); ab.textContent = sd.answeredBy || '' }
+                }
+                updateProgress();
+                setupGameListeners();
+                showScreen('screen-game');
+            });
+        }
+
+        // ===== Online: Game Listeners =====
+        function setupGameListeners() {
+            // State listener
+            const stRef = roomRef.child('state');
+            const stCb = stRef.on('value', snap => {
+                const st = snap.val(); if (!st) return;
+                curIdx = st.currentIndex || 0; score = st.score || 0;
+                usedWords.clear(); if (st.usedWords) Object.keys(st.usedWords).forEach(w => usedWords.add(w));
+                updateProgress();
+                // Deactivate all
+                document.querySelectorAll('.card.active').forEach(c => c.classList.remove('active'));
+                document.querySelectorAll('.slot-input:not(.ok)').forEach(inp => inp.disabled = true);
+                if (score >= 30) { endOnlineGame(); return }
+                if (curIdx < slots.length && !slots[curIdx].word) {
+                    const cd = document.getElementById('cd' + curIdx); if (cd) cd.classList.add('active');
+                    const inp = document.getElementById('inp' + curIdx);
+                    if (inp) {
+                        if (onlineMode === 'party') {
+                            inp.disabled = false; inp.focus();
+                            setTurnIndicator('みんなで回答！🎉', true);
+                        } else {
+                            const tp = st.currentTurnPlayer;
+                            if (tp === playerId) { inp.disabled = false; inp.focus(); setTurnIndicator('あなたのターン！', true) }
+                            else { inp.disabled = true; const nm = (players[tp] && players[tp].name) || '???'; setTurnIndicator(nm + 'さんのターン...', false) }
+                        }
+                    }
+                    const el = document.getElementById('sl' + curIdx); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+            listenerRefs.push({ ref: stRef, event: 'value', cb: stCb });
+            // Slots listener
+            const slRef = roomRef.child('slots');
+            const slCb = slRef.on('child_changed', snap => {
+                const idx = parseInt(snap.key), data = snap.val();
+                slots[idx] = { pic: data.pic, word: data.word || '', req: data.req || '', answeredBy: data.answeredBy || '' };
+                if (data.word && !locallyAnswered.has(idx)) {
+                    const inp = document.getElementById('inp' + idx); if (inp) { inp.value = data.word; inp.classList.add('ok'); inp.disabled = true }
+                    const cd = document.getElementById('cd' + idx); if (cd) { cd.classList.remove('active'); cd.classList.add('done') }
+                    const ab = document.getElementById('ab' + idx); if (ab) ab.textContent = data.answeredBy || '';
+                }
+                const rc = document.getElementById('rc' + idx); if (rc && data.req) rc.textContent = '「' + data.req + '」';
+            });
+            listenerRefs.push({ ref: slRef, event: 'child_changed', cb: slCb });
+            // Players listener (for scores)
+            const plRef = roomRef.child('players');
+            const plCb = plRef.on('value', snap => { players = snap.val() || {} });
+            listenerRefs.push({ ref: plRef, event: 'value', cb: plCb });
+            // Status listener
+            const statusRef = roomRef.child('status');
+            const statusCb = statusRef.on('value', snap => { if (snap.val() === 'ended') endOnlineGame() });
+            listenerRefs.push({ ref: statusRef, event: 'value', cb: statusCb });
+        }
+
+        function setTurnIndicator(text, isMyTurn) {
+            const el = document.getElementById('turnIndicator');
+            el.textContent = text; el.style.display = 'inline';
+            el.className = 'turn-indicator' + (isMyTurn ? ' my-turn' : '');
+        }
+
+        // ===== Online: Validate =====
+        function tryValidateOnline(idx) {
+            if (idx !== curIdx) return;
+            const inp = document.getElementById('inp' + idx), err = document.getElementById('er' + idx), w = inp.value.trim();
+            err.textContent = ''; inp.classList.remove('ok', 'ng');
+            if (!w) { err.textContent = '入力してね'; inp.classList.add('ng'); return }
+            if (!isKana(w)) { err.textContent = 'ひらがな/カタカナで！'; inp.classList.add('ng'); return }
+            const h = k2h(w), req = slots[idx].req;
+            if (h[0] !== req) { err.textContent = '「' + req + '」から始めて！'; inp.classList.add('ng'); return }
+            const lc = lastChar(w);
+            if (lc === 'ん') { err.textContent = '「ん」では終われない！'; inp.classList.add('ng'); return }
+            if (usedWords.has(h)) { err.textContent = 'もう使った言葉！'; inp.classList.add('ng'); return }
+            inp.disabled = true;
+            if (onlineMode === 'party') {
+                // Transaction for party mode
+                roomRef.child('slots/' + idx + '/word').transaction(cur => {
+                    if (cur) return;// abort if already answered
+                    return w;
+                }, (error, committed) => {
+                    if (error) { err.textContent = 'エラー'; inp.disabled = false; inp.classList.add('ng'); return }
+                    if (!committed) { err.textContent = 'もう回答済み！'; inp.disabled = false; inp.classList.add('ng'); return }
+                    afterOnlineAnswer(idx, w, lc, h);
+                });
+            } else {
+                // Battle mode - direct write
+                afterOnlineAnswer(idx, w, lc, h);
+            }
+        }
+
+        function afterOnlineAnswer(idx, w, lc, h) {
+            locallyAnswered.add(idx);
+            const inp = document.getElementById('inp' + idx); if (inp) inp.classList.add('ok');
+            const cd = document.getElementById('cd' + idx); if (cd) { cd.classList.remove('active'); cd.classList.add('done') }
+            const ab = document.getElementById('ab' + idx); if (ab) ab.textContent = playerName;
+            slots[idx].word = w; slots[idx].answeredBy = playerName; usedWords.add(h); score++;
+            // Compute next turn player (battle mode)
+            let nextTurnPlayer = null;
+            if (onlineMode === 'battle') {
+                const sorted = Object.entries(players).sort((a, b) => a[1].order - b[1].order);
+                const myIdx = sorted.findIndex(p => p[0] === playerId);
+                const nextIdx = (myIdx + 1) % sorted.length;
+                nextTurnPlayer = sorted[nextIdx][0];
+            }
+            const updates = {};
+            updates['slots/' + idx + '/word'] = w;
+            updates['slots/' + idx + '/answeredBy'] = playerName;
+            updates['state/currentIndex'] = idx + 1;
+            updates['state/score'] = score;
+            updates['state/usedWords/' + h] = true;
+            if (idx + 1 < slots.length) updates['slots/' + (idx + 1) + '/req'] = lc;
+            if (nextTurnPlayer) updates['state/currentTurnPlayer'] = nextTurnPlayer;
+            // Player score
+            const myScore = (players[playerId] && players[playerId].score) || 0;
+            updates['players/' + playerId + '/score'] = myScore + 1;
+            if (score >= 30) updates['status'] = 'ended';
+            roomRef.update(updates);
+        }
+
+        // ===== Online: End =====
+        function endOnlineGame() {
+            roomRef.once('value', snap => {
+                const data = snap.val(); if (!data) return;
+                const totalScore = data.state ? data.state.score || 0 : 0;
+                document.getElementById('finalScore').textContent = totalScore;
+                // Scoreboard
+                const sb = document.getElementById('scoreboard'); sb.innerHTML = ''; sb.style.display = 'flex';
+                const ps = data.players || {};
+                const sorted = Object.entries(ps).sort((a, b) => (b[1].score || 0) - (a[1].score || 0));
+                const medals = ['🥇', '🥈', '🥉'];
+                sorted.forEach(([pid, p], i) => {
+                    const item = document.createElement('div'); item.className = 'score-item';
+                    item.innerHTML = `<span class="score-rank">${medals[i] || '　'}</span><span class="score-name">${p.name}${pid === playerId ? ' (あなた)' : ''}</span><span class="score-value">${p.score || 0}個</span>`;
+                    sb.appendChild(item);
+                });
+                // Chain
+                const chain = document.getElementById('endChain');
+                const slotsData = data.slots || {};
+                const answered = Object.entries(slotsData).filter(([k, v]) => v.word).sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+                if (answered.length === 0) { chain.textContent = 'まだ言葉をつなげていません。' }
+                else { let txt = ''; answered.forEach(([k, v], i) => { txt += (i + 1) + '. ' + v.word + '(' + v.answeredBy + ')'; if (i < answered.length - 1) txt += ' → '; if ((i + 1) % 5 === 0) txt += '\n' }); chain.textContent = txt }
+                showScreen('screen-end');
+            });
+        }
+
+        // ===== Online: Leave / Cleanup =====
+        function leaveRoom() {
+            if (roomRef && isHost) { roomRef.child('status').set('ended') }
+            else if (roomRef && playerId) { roomRef.child('players/' + playerId).remove() }
+            cleanupOnline(); showScreen('screen-start');
+        }
+        function cleanupOnline() {
+            listenerRefs.forEach(l => l.ref.off(l.event, l.cb)); listenerRefs = [];
+            roomRef = null; isOnline = false; roomId = null; playerId = null; isHost = false; players = {}; locallyAnswered.clear();
+            document.getElementById('turnIndicator').style.display = 'none';
+            document.getElementById('dispRoomIdGame').style.display = 'none';
+        }
 
         // Init
         initDeco();
